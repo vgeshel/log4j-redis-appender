@@ -20,7 +20,7 @@
 * @author Landro Silva
 * @copyright 2012 Pavlo Baron */
 
-package test.org.pbit.log4j2redis;
+package org.pbit.log4j2redis;
 
 import org.apache.log4j.Logger;
 
