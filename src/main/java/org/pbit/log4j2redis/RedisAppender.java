@@ -18,6 +18,7 @@
 
 * @author Pavlo Baron <pb at pbit dot org>
 * @author Landro Silva
+* @author Ryan Tenney <ryan@10e.us>
 * @copyright 2012 Pavlo Baron
 **/
 
@@ -37,6 +38,7 @@ import redis.clients.jedis.Jedis;
 import redis.clients.util.SafeEncoder;
 
 public class RedisAppender extends AppenderSkeleton {
+
     // Log4J properties
     private String host = "localhost";
     private int port = 6379;
@@ -54,8 +56,6 @@ public class RedisAppender extends AppenderSkeleton {
 
         new Timer().schedule(new TimerTask() {
             public void run() {
-                // long begin = System.nanoTime();
-
                 Entry<String, String> message;
 
                 int currentMessagesCount = messages.size();
@@ -63,7 +63,7 @@ public class RedisAppender extends AppenderSkeleton {
                 byte[][] bucket = new byte[bucketSize * 2][];
 
                 int messageIndex = 0;
-                
+
                 for (Iterator<Entry<String, String>> it = messages.entrySet().iterator(); it.hasNext();) {
                     message = it.next();
                     it.remove();
@@ -75,23 +75,20 @@ public class RedisAppender extends AppenderSkeleton {
 
                     if (messageIndex == bucketSize * 2) {
                         jedis.mset(bucket);
-                        
+
                         currentMessagesCount -= bucketSize;
-                        
+
                         if (currentMessagesCount == 0) {
-                        	// get out the loop and wait 1/2 second
-                        	break;
+                            // get out the loop and wait 1/2 second
+                            break;
                         } else {
-                        	bucketSize = currentMessagesCount < msetmax ? currentMessagesCount : msetmax;
+                            bucketSize = currentMessagesCount < msetmax ? currentMessagesCount : msetmax;
                             bucket = new byte[bucketSize * 2][];
-                            
+
                             messageIndex = 0;
                         }
                     }
                 }
-
-                // long expendHere = System.nanoTime() - begin;
-                // System.out.println("Expend here: " + expendHere + " ns");
             }
         }, 500, 500);
     }
@@ -122,4 +119,5 @@ public class RedisAppender extends AppenderSkeleton {
     public boolean requiresLayout() {
         return true;
     }
+
 }
