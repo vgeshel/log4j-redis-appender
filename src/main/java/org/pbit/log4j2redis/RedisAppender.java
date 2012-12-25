@@ -24,17 +24,19 @@
 
 package org.pbit.log4j2redis;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.spi.LoggingEvent;
 
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.exceptions.JedisConnectionException;
 import redis.clients.util.SafeEncoder;
 
 public class RedisAppender extends AppenderSkeleton {
@@ -42,66 +44,108 @@ public class RedisAppender extends AppenderSkeleton {
     // Log4J properties
     private String host = "localhost";
     private int port = 6379;
-    private int msetmax = 100;
+    private String password;
+    private String key;
+
+    private int batchSize = 100;
+    private long period = 500;
+    private boolean alwaysBatch = true;
+    private boolean purgeOnFailure = true;
+    private boolean debug = false;
+
+    private int messageIndex = 0;
+    private Deque<String> messages;
+    private byte[][] batch;
 
     // Redis connection and messages buffer
     private Jedis jedis;
-    private Map<String, String> messages;
 
+    private ScheduledExecutorService executor;
+    private ScheduledFuture<?> task;
+
+    @Override
     public void activateOptions() {
         super.activateOptions();
 
+        if (key == null) throw new IllegalStateException("Must set 'key'");
+
         jedis = new Jedis(host, port);
-        messages = new ConcurrentHashMap<String, String>();
 
-        new Timer().schedule(new TimerTask() {
+        messages = new ConcurrentLinkedDeque<String>();
+        batch = new byte[batchSize][];
+
+        executor = Executors.newSingleThreadScheduledExecutor();
+        task = executor.scheduleWithFixedDelay(new Runnable() {
+            @Override
             public void run() {
-                Entry<String, String> message;
-
-                int currentMessagesCount = messages.size();
-                int bucketSize = currentMessagesCount < msetmax ? currentMessagesCount : msetmax;
-                byte[][] bucket = new byte[bucketSize * 2][];
-
-                int messageIndex = 0;
-
-                for (Iterator<Entry<String, String>> it = messages.entrySet().iterator(); it.hasNext();) {
-                    message = it.next();
-                    it.remove();
-
-                    // [k1, v1, k2, v2, ..., kN, vN]
-                    bucket[messageIndex] = SafeEncoder.encode(message.getKey());
-                    bucket[messageIndex + 1] = SafeEncoder.encode(message.getValue());
-                    messageIndex += 2;
-
-                    if (messageIndex == bucketSize * 2) {
-                        jedis.mset(bucket);
-
-                        currentMessagesCount -= bucketSize;
-
-                        if (currentMessagesCount == 0) {
-                            // get out the loop and wait 1/2 second
-                            break;
-                        } else {
-                            bucketSize = currentMessagesCount < msetmax ? currentMessagesCount : msetmax;
-                            bucket = new byte[bucketSize * 2][];
-
-                            messageIndex = 0;
-                        }
-                    }
-                }
+                send();
             }
-        }, 500, 500);
+        }, period, period, TimeUnit.MILLISECONDS);
     }
 
+    @Override
     protected void append(LoggingEvent event) {
         try {
-            messages.put(this.layout.format(event), event.getRenderedMessage());
+        	messages.add(layout.format(event));
         } catch (Exception e) {
-            // what to do? ignore? send back error - from log???
+            if (debug) e.printStackTrace();
         }
     }
 
+    @Override
     public void close() {
+    	task.cancel(false);
+    	send();
+    	jedis.disconnect();
+    }
+
+    private boolean connect() {
+    	try {
+            if (!jedis.isConnected()) {
+                jedis.connect();
+
+                if (password != null) {
+                    if ("OK".equals(jedis.auth(password))) {
+                    	throw new JedisConnectionException("AUTH failure");
+                    }
+                }
+            }
+            return true;
+        } catch (JedisConnectionException e) {
+        	if (debug) e.printStackTrace();
+            return false;
+        }
+    }
+
+    private void send() {
+        if (!connect()) {
+        	if (purgeOnFailure) {
+        	    messages.clear();
+        	    messageIndex = 0;
+        	}
+            return;
+        }
+
+        try {
+            String message;
+            while ((message = messages.pollFirst()) != null) {
+                batch[messageIndex++] = SafeEncoder.encode(message);
+
+                if (messageIndex == batchSize) push();
+            }
+
+            if (!alwaysBatch && messageIndex > 0) push();
+        } catch (JedisConnectionException e) {
+            if (debug) e.printStackTrace();
+        }
+    }
+
+    private void push() {
+        jedis.rpush(SafeEncoder.encode(key),
+              batchSize == messageIndex
+                  ? batch
+                  : Arrays.copyOf(batch, messageIndex));
+        messageIndex = 0;
     }
 
     public void setHost(String host) {
@@ -112,8 +156,32 @@ public class RedisAppender extends AppenderSkeleton {
         this.port = port;
     }
 
-    public void setMsetmax(int msetmax) {
-        this.msetmax = msetmax;
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public void setPeriod(long millis) {
+        this.period = millis;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
+
+    public void setBatchSize(int batchsize) {
+        this.batchSize = batchsize;
+    }
+
+    public void setPurgeOnFailure(boolean purgeOnFailure) {
+        this.purgeOnFailure = purgeOnFailure;
+    }
+
+    public void setAlwaysBatch(boolean alwaysBatch) {
+        this.alwaysBatch = alwaysBatch;
+    }
+
+    public void setDebug(boolean debug) {
+        this.debug = debug;
     }
 
     public boolean requiresLayout() {

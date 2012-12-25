@@ -22,27 +22,37 @@
 
 package org.pbit.log4j2redis;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.log4j.Logger;
+import org.junit.Test;
 
 public class Log4j2RedisTest {
-    
+
     public static class LogThread extends Thread {
-        Logger log = Logger.getLogger("LogThread");
+    	private static final AtomicInteger count = new AtomicInteger();
+        Logger log = Logger.getLogger("LogThread" + count.incrementAndGet());
         public void run() {
-            for (long i = 0; i < 10000; i++)
-                log.warn("whatever " + i);
+            try {
+                for (long i = 0; i < 1000; i++) {
+                    log.trace("whatever " + i);
+                    Thread.sleep(10);
+                }
+            } catch (InterruptedException e) {}
         }
     }
-    
-    static Logger log = Logger.getLogger("LogMainThread");
-    
-    public static void main(String[] args) {
+
+    private static final Logger log = Logger.getLogger("LogMainThread");
+
+    @Test
+    public void test() throws Throwable {
         for (int i = 1; i <= 9; i++) {
             new Log4j2RedisTest.LogThread().start();
         }
-        
-        for (long i = 0; i < 10000; i++) {
-            log.error("that's me " + i);
+
+        for (long i = 0; i < 1000; i++) {
+            log.debug("that's me " + i);
+            Thread.sleep(100);
         }
     }
 }

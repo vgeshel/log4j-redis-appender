@@ -26,9 +26,18 @@ import org.apache.log4j.PatternLayout;
 import org.apache.log4j.helpers.PatternParser;
 
 public class RedisPatternLayout extends PatternLayout {
-        
+
+    public RedisPatternLayout() {
+        super();
+    }
+
+    public RedisPatternLayout(String pattern) {
+        super(pattern);
+    }
+
     @Override
     protected PatternParser createPatternParser(String pattern) {
         return new RedisPatternParser(pattern);
     }
+
 }
