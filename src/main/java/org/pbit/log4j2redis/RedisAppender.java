@@ -128,6 +128,8 @@ public class RedisAppender extends AppenderSkeleton {
         }
 
         try {
+            if (messageIndex == batchSize) push();
+
             String message;
             while ((message = messages.pollFirst()) != null) {
                 batch[messageIndex++] = SafeEncoder.encode(message);
