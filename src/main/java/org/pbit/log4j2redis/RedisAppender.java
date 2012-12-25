@@ -95,6 +95,7 @@ public class RedisAppender extends AppenderSkeleton {
     @Override
     public void close() {
     	task.cancel(false);
+    	executor.shutdown();
     	send();
     	jedis.disconnect();
     }
