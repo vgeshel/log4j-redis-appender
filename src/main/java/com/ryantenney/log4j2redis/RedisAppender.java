@@ -74,7 +74,7 @@ public class RedisAppender extends AppenderSkeleton {
         messages = new ConcurrentLinkedDeque<String>();
         batch = new byte[batchSize][];
 
-        executor = Executors.newSingleThreadScheduledExecutor();
+        executor = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("RedisAppender"));
         task = executor.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
