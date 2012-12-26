@@ -20,7 +20,7 @@
 * @copyright 2012 Pavlo Baron
 **/
 
-package org.pbit.log4j2redis;
+package com.ryantenney.log4j2redis;
 
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
