@@ -33,6 +33,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.AppenderSkeleton;
+import org.apache.log4j.spi.ErrorCode;
 import org.apache.log4j.spi.LoggingEvent;
 
 import redis.clients.jedis.Jedis;
@@ -51,7 +52,6 @@ public class RedisAppender extends AppenderSkeleton {
     private long period = 500;
     private boolean alwaysBatch = true;
     private boolean purgeOnFailure = true;
-    private boolean debug = false;
 
     private int messageIndex = 0;
     private Deque<String> messages;
@@ -88,16 +88,20 @@ public class RedisAppender extends AppenderSkeleton {
         try {
         	messages.add(layout.format(event));
         } catch (Exception e) {
-            if (debug) e.printStackTrace();
+        	errorHandler.error(e.getMessage(), e, ErrorCode.GENERIC_FAILURE);
         }
     }
 
     @Override
     public void close() {
-    	task.cancel(false);
-    	executor.shutdown();
-    	send();
-    	jedis.disconnect();
+    	try {
+	        task.cancel(false);
+	        executor.shutdown();
+	        send();
+	        jedis.disconnect();
+    	} catch (Exception e) {
+            errorHandler.error(e.getMessage(), e, ErrorCode.CLOSE_FAILURE);
+    	}
     }
 
     private boolean connect() {
@@ -113,7 +117,7 @@ public class RedisAppender extends AppenderSkeleton {
             }
             return true;
         } catch (JedisConnectionException e) {
-        	if (debug) e.printStackTrace();
+            errorHandler.error(e.getMessage(), e, ErrorCode.GENERIC_FAILURE);
             return false;
         }
     }
@@ -139,7 +143,7 @@ public class RedisAppender extends AppenderSkeleton {
 
             if (!alwaysBatch && messageIndex > 0) push();
         } catch (JedisConnectionException e) {
-            if (debug) e.printStackTrace();
+            errorHandler.error(e.getMessage(), e, ErrorCode.WRITE_FAILURE);
         }
     }
 
@@ -181,10 +185,6 @@ public class RedisAppender extends AppenderSkeleton {
 
     public void setAlwaysBatch(boolean alwaysBatch) {
         this.alwaysBatch = alwaysBatch;
-    }
-
-    public void setDebug(boolean debug) {
-        this.debug = debug;
     }
 
     public boolean requiresLayout() {
