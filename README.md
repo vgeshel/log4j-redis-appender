@@ -11,7 +11,7 @@ Based on [@pavlobaron's log4j2redis](https://github.com/pavlobaron/log4j2redis),
 This appender pushes log messages to a Redis list. Here is an example configuration:
 
     log4j.rootLogger=DEBUG, redis
-    log4j.appender.redis=com.ryantenney.log4j2redis.RedisAppender
+    log4j.appender.redis=com.ryantenney.log4j.RedisAppender
     log4j.appender.redis.layout=…
     log4j.appender.redis.host=localhost
     log4j.appender.redis.port=6379
