@@ -2,12 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.ryantenney</groupId>
-    <artifactId>log4j2redis</artifactId>
+    <groupId>com.ryantenney.log4j</groupId>
+    <artifactId>redis-appender</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <name>log4j2redis</name>
+    <name>redis-appender</name>
     <description>log4j appender for publishing directly to redis</description>
-    <url>http://github.com/ryantenney/log4j2redis/</url>
+    <url>http://github.com/ryantenney/redis-appender/</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -35,14 +35,14 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:git://github.com/ryantenney/log4j2redis.git</connection>
-        <developerConnection>scm:git:git@github.com:ryantenney/log4j2redis.git</developerConnection>
-        <url>https://github.com/ryantenney/log4j2redis/</url>
+        <connection>scm:git:git://github.com/ryantenney/redis-appender.git</connection>
+        <developerConnection>scm:git:git@github.com:ryantenney/redis-appender.git</developerConnection>
+        <url>https://github.com/ryantenney/redis-appender/</url>
     </scm>
 
     <issueManagement>
         <system>github</system>
-        <url>http://github.com/ryantenney/log4j2redis/issues</url>
+        <url>http://github.com/ryantenney/redis-appender/issues</url>
     </issueManagement>
 
     <distributionManagement>

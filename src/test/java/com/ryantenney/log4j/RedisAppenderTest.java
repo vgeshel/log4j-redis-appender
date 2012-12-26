@@ -20,14 +20,14 @@
 * @author Landro Silva
 * @copyright 2012 Pavlo Baron */
 
-package com.ryantenney.log4j2redis;
+package com.ryantenney.log4j;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.Logger;
 import org.junit.Test;
 
-public class Log4j2RedisTest {
+public class RedisAppenderTest {
 
     public static class LogThread extends Thread {
     	private static final AtomicInteger count = new AtomicInteger();
@@ -47,7 +47,7 @@ public class Log4j2RedisTest {
     @Test
     public void test() throws Throwable {
         for (int i = 1; i <= 9; i++) {
-            new Log4j2RedisTest.LogThread().start();
+            new RedisAppenderTest.LogThread().start();
         }
 
         for (long i = 0; i < 1000; i++) {

@@ -22,7 +22,7 @@
 * @copyright 2012 Pavlo Baron
 **/
 
-package com.ryantenney.log4j2redis;
+package com.ryantenney.log4j;
 
 import java.util.Arrays;
 import java.util.Deque;

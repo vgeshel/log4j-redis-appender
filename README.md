@@ -1,49 +1,48 @@
-log4j2redis
+redis-appender
 ===========
 
-log4j appender that writes straight to Redis.
+Log4j appender for pushing log messages to a Redis list.
 
-(the 42 looking thingy in the name is intended, yes)
+Based on [@pavlobaron's log4j2redis](https://github.com/pavlobaron/log4j2redis), though the two projects share almost no code. That project writes messages to unique keys as opposed to pushing to a list.
+
 
 ## Configuration
 
-This appender writes to a Redis store. Here is an example configuration:
+This appender pushes log messages to a Redis list. Here is an example configuration:
 
-    log4j.rootLogger=DEBUG, REDIS
-    log4j.appender.REDIS=org.pbit.log4j2redis.RedisAppender
-    log4j.appender.REDIS.host=localhost
-    log4j.appender.REDIS.port=6379
-    log4j.appender.REDIS.msetmax=100
-    log4j.appender.REDIS.layout=org.pbit.log4j2redis.RedisPatternLayout
-    log4j.appender.REDIS.layout.ConversionPattern=%H - %P - %t - %d - %p - %U
+    log4j.rootLogger=DEBUG, redis
+    log4j.appender.redis=com.ryantenney.log4j2redis.RedisAppender
+    log4j.appender.redis.layout=…
+    log4j.appender.redis.host=localhost
+    log4j.appender.redis.port=6379
+    log4j.appender.redis.password=password
+    log4j.appender.redis.key=key
+    log4j.appender.redis.period=500
+    log4j.appender.redis.batchSize=100
+    log4j.appender.redis.purgeOnFailure=true
+    log4j.appender.redis.alwaysBatch=true
 
 Where:
 
-* **host** and **port** are optional properties, so if they are not set it will use the standard **localhost** and **6379**
-* **msetmax** is the number of messages to be sent in one batch MSET command, which defaults to **100**
-* RedisPatternLayout extends the standard PatternLayout with %U (UUID), %P (process name) and %H (host) The pattern is used
-to build the Redis key, while the simply rendered log message will be the value behind it.
+* **host** (optional, default: localhost)
+* **port** (optional, default: 6379)
+* **password** (optional) redis password, if required
+* **key** (_required_) key of the list to push log messages
+* **period** (optional, default: 500) the period in milliseconds between 
+* **batchSize** (optional, default: 100) the number of log messages to send in a single `RPUSH` command
+* **purgeOnFailure** (optional, default: 100) whether to purge the enqueued log messages if an error occurs attempting to connect to redis, thus preventing the memory usage from becoming too high
+* **alwaysBatch** (optional, default: 100) whether to wait for a full batch. if true, will only send once there are `batchSize` log messages enqueued
 
-It's recommended to use %U, %P and %H. That way, it should be possible to uniquely collect log messages from any host while writing
-to one single Redis node. Redis can of course be configured to have persisting slaves while
-the one and only target node just writes into memory (attention: after its restart the data on
-slaves might get lost, so back it up - it's just append-only logs). Of course, a more complex
-Redis topology can be implemented and used, but therefore, consult Redis documentation.
+### Maven
 
-## Message Writing
+```xml
+<dependency>
+	<groupId>com.ryantenney.log4j</groupId>
+	<artifactId>redis-appender</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
+</dependency>
+```
 
-Every **log message** will be first stored in memory and after asynchronously sent to Redis. Thus
-network latency doesn't impact log writing - unless, of course, that message writing is too
-fast and network is too slow, what might throw an "out of memory"; but it would be the worst
-case ever.
+### Usage Note
 
-## Developers
-
-* Pavlo Baron
-* Leandro Silva
-
-## Contribution
-
-There still is a black hole in the code with a central map - I'll get back to it later.
-
-Feedback and contribution are welcome.
+Goes great with [@lusis's log4j-jsonevent-layout](https://github.com/lusis/log4j-jsonevent-layout) for pushing log messages straight to a [Logstash](https://github.com/logstash/logstash) instance configured to ingest log messages from Redis. If you still happen to use Logstash with AMQP, check out [@lusis's ZeroMQ Appender](https://github.com/lusis/zmq-appender) or [@jbrisbin's RabbitMQ Appender](https://github.com/jbrisbin/vcloud/tree/master/amqp-appender)

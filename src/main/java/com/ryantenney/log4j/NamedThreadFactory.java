@@ -1,4 +1,4 @@
-package com.ryantenney.log4j2redis;
+package com.ryantenney.log4j;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
