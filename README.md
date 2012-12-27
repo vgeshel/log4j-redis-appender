@@ -30,8 +30,8 @@ Where:
 * **key** (_required_) key of the list to push log messages
 * **period** (optional, default: 500) the period in milliseconds between 
 * **batchSize** (optional, default: 100) the number of log messages to send in a single `RPUSH` command
-* **purgeOnFailure** (optional, default: 100) whether to purge the enqueued log messages if an error occurs attempting to connect to redis, thus preventing the memory usage from becoming too high
-* **alwaysBatch** (optional, default: 100) whether to wait for a full batch. if true, will only send once there are `batchSize` log messages enqueued
+* **purgeOnFailure** (optional, default: true) whether to purge the enqueued log messages if an error occurs attempting to connect to redis, thus preventing the memory usage from becoming too high
+* **alwaysBatch** (optional, default: true) whether to wait for a full batch. if true, will only send once there are `batchSize` log messages enqueued
 
 ### Maven
 
