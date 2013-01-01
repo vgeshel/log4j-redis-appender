@@ -25,8 +25,8 @@
 package com.ryantenney.log4j;
 
 import java.util.Arrays;
-import java.util.Deque;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -54,7 +54,7 @@ public class RedisAppender extends AppenderSkeleton {
     private boolean purgeOnFailure = true;
 
     private int messageIndex = 0;
-    private Deque<String> messages;
+    private Queue<String> messages;
     private byte[][] batch;
 
     // Redis connection and messages buffer
@@ -71,7 +71,7 @@ public class RedisAppender extends AppenderSkeleton {
 
         jedis = new Jedis(host, port);
 
-        messages = new ConcurrentLinkedDeque<String>();
+        messages = new ConcurrentLinkedQueue<String>();
         batch = new byte[batchSize][];
 
         executor = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("RedisAppender"));
@@ -135,7 +135,7 @@ public class RedisAppender extends AppenderSkeleton {
             if (messageIndex == batchSize) push();
 
             String message;
-            while ((message = messages.pollFirst()) != null) {
+            while ((message = messages.poll()) != null) {
                 batch[messageIndex++] = SafeEncoder.encode(message);
 
                 if (messageIndex == batchSize) push();
