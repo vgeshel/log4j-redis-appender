@@ -29,30 +29,31 @@ import org.junit.Test;
 
 public class RedisAppenderTest {
 
-    public static class LogThread extends Thread {
-    	private static final AtomicInteger count = new AtomicInteger();
-        Logger log = Logger.getLogger("LogThread" + count.incrementAndGet());
-        public void run() {
-            try {
-                for (long i = 0; i < 1000; i++) {
-                    log.trace("whatever " + i);
-                    Thread.sleep(10);
-                }
-            } catch (InterruptedException e) {}
-        }
-    }
+	public static class LogThread extends Thread {
+		private static final AtomicInteger count = new AtomicInteger();
+		Logger log = Logger.getLogger("LogThread" + count.incrementAndGet());
+		public void run() {
+			try {
+				for (long i = 0; i < 1000; i++) {
+					log.trace("whatever " + i);
+					Thread.sleep(10);
+				}
+			} catch (InterruptedException e) {}
+		}
+	}
 
-    private static final Logger log = Logger.getLogger("LogMainThread");
+	private static final Logger log = Logger.getLogger("LogMainThread");
 
-    @Test
-    public void test() throws Throwable {
-        for (int i = 1; i <= 9; i++) {
-            new RedisAppenderTest.LogThread().start();
-        }
+	@Test
+	public void test() throws Throwable {
+		for (int i = 1; i <= 9; i++) {
+			new RedisAppenderTest.LogThread().start();
+		}
 
-        for (long i = 0; i < 1000; i++) {
-            log.debug("that's me " + i);
-            Thread.sleep(100);
-        }
-    }
+		for (long i = 0; i < 1000; i++) {
+			log.debug("that's me " + i);
+			Thread.sleep(100);
+		}
+	}
+
 }
