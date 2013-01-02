@@ -54,7 +54,7 @@ public class RedisAppender extends AppenderSkeleton {
 	private boolean purgeOnFailure = true;
 
 	private int messageIndex = 0;
-	private Queue<String> messages;
+	private Queue<LoggingEvent> events;
 	private byte[][] batch;
 
 	// Redis connection and messages buffer
@@ -71,7 +71,7 @@ public class RedisAppender extends AppenderSkeleton {
 
 		jedis = new Jedis(host, port);
 
-		messages = new ConcurrentLinkedQueue<String>();
+		events = new ConcurrentLinkedQueue<LoggingEvent>();
 		batch = new byte[batchSize][];
 
 		executor = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("RedisAppender"));
@@ -85,11 +85,17 @@ public class RedisAppender extends AppenderSkeleton {
 
 	@Override
 	protected void append(LoggingEvent event) {
-		try {
-			messages.add(layout.format(event));
-		} catch (Exception e) {
-			errorHandler.error(e.getMessage(), e, ErrorCode.GENERIC_FAILURE);
-		}
+		populateEvent(event);
+		events.add(event);
+	}
+
+	protected void populateEvent(LoggingEvent event) {
+		event.getThreadName();
+		event.getRenderedMessage();
+		event.getNDC();
+		event.getMDCCopy();
+		event.getThrowableStrRep();
+		event.getLocationInformation();
 	}
 
 	@Override
@@ -125,7 +131,7 @@ public class RedisAppender extends AppenderSkeleton {
 	private void send() {
 		if (!connect()) {
 			if (purgeOnFailure) {
-				messages.clear();
+				events.clear();
 				messageIndex = 0;
 			}
 			return;
@@ -134,9 +140,14 @@ public class RedisAppender extends AppenderSkeleton {
 		try {
 			if (messageIndex == batchSize) push();
 
-			String message;
-			while ((message = messages.poll()) != null) {
-				batch[messageIndex++] = SafeEncoder.encode(message);
+			LoggingEvent event;
+			while ((event = events.poll()) != null) {
+				try {
+					String message = layout.format(event);
+					batch[messageIndex++] = SafeEncoder.encode(message);
+				} catch (Exception e) {
+					errorHandler.error(e.getMessage(), e, ErrorCode.GENERIC_FAILURE);
+				}
 
 				if (messageIndex == batchSize) push();
 			}
