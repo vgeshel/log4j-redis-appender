@@ -33,16 +33,15 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.AppenderSkeleton;
+import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.spi.ErrorCode;
 import org.apache.log4j.spi.LoggingEvent;
 
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.exceptions.JedisConnectionException;
 import redis.clients.util.SafeEncoder;
 
-public class RedisAppender extends AppenderSkeleton {
+public class RedisAppender extends AppenderSkeleton implements Runnable {
 
-	// Log4J properties
 	private String host = "localhost";
 	private int port = 6379;
 	private String password;
@@ -57,7 +56,6 @@ public class RedisAppender extends AppenderSkeleton {
 	private Queue<LoggingEvent> events;
 	private byte[][] batch;
 
-	// Redis connection and messages buffer
 	private Jedis jedis;
 
 	private ScheduledExecutorService executor;
@@ -65,28 +63,35 @@ public class RedisAppender extends AppenderSkeleton {
 
 	@Override
 	public void activateOptions() {
-		super.activateOptions();
+		try {
+			super.activateOptions();
 
-		if (key == null) throw new IllegalStateException("Must set 'key'");
+			if (key == null) throw new IllegalStateException("Must set 'key'");
 
-		jedis = new Jedis(host, port);
+			if (executor == null) executor = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("RedisAppender"));
 
-		events = new ConcurrentLinkedQueue<LoggingEvent>();
-		batch = new byte[batchSize][];
+			if (task != null && !task.isDone()) task.cancel(true);
+			if (jedis != null && jedis.isConnected()) jedis.disconnect();
 
-		executor = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("RedisAppender"));
-		task = executor.scheduleWithFixedDelay(new Runnable() {
-			@Override
-			public void run() {
-				send();
-			}
-		}, period, period, TimeUnit.MILLISECONDS);
+			events = new ConcurrentLinkedQueue<LoggingEvent>();
+			batch = new byte[batchSize][];
+			messageIndex = 0;
+
+			jedis = new Jedis(host, port);
+			task = executor.scheduleWithFixedDelay(this, period, period, TimeUnit.MILLISECONDS);
+		} catch (Exception e) {
+			LogLog.error("Error during activateOptions", e);
+		}
 	}
 
 	@Override
 	protected void append(LoggingEvent event) {
-		populateEvent(event);
-		events.add(event);
+		try {
+			populateEvent(event);
+			events.add(event);
+		} catch (Exception e) {
+			errorHandler.error("Error populating event and adding to queue", e, ErrorCode.GENERIC_FAILURE, event);
+		}
 	}
 
 	protected void populateEvent(LoggingEvent event) {
@@ -103,7 +108,6 @@ public class RedisAppender extends AppenderSkeleton {
 		try {
 			task.cancel(false);
 			executor.shutdown();
-			send();
 			jedis.disconnect();
 		} catch (Exception e) {
 			errorHandler.error(e.getMessage(), e, ErrorCode.CLOSE_FAILURE);
@@ -113,24 +117,27 @@ public class RedisAppender extends AppenderSkeleton {
 	private boolean connect() {
 		try {
 			if (!jedis.isConnected()) {
+				LogLog.debug("Connecting to Redis: " + host);
 				jedis.connect();
 
 				if (password != null) {
-					if ("OK".equals(jedis.auth(password))) {
-						throw new JedisConnectionException("AUTH failure");
+					String result = jedis.auth(password);
+					if (!"OK".equals(result)) {
+						LogLog.error("Error authenticating with Redis: " + host);
 					}
 				}
 			}
 			return true;
-		} catch (JedisConnectionException e) {
-			errorHandler.error(e.getMessage(), e, ErrorCode.GENERIC_FAILURE);
+		} catch (Exception e) {
+			LogLog.error("Error connecting to Redis server", e);
 			return false;
 		}
 	}
 
-	private void send() {
+	public void run() {
 		if (!connect()) {
 			if (purgeOnFailure) {
+				LogLog.debug("Purging event queue");
 				events.clear();
 				messageIndex = 0;
 			}
@@ -146,19 +153,20 @@ public class RedisAppender extends AppenderSkeleton {
 					String message = layout.format(event);
 					batch[messageIndex++] = SafeEncoder.encode(message);
 				} catch (Exception e) {
-					errorHandler.error(e.getMessage(), e, ErrorCode.GENERIC_FAILURE);
+					errorHandler.error(e.getMessage(), e, ErrorCode.GENERIC_FAILURE, event);
 				}
 
 				if (messageIndex == batchSize) push();
 			}
 
 			if (!alwaysBatch && messageIndex > 0) push();
-		} catch (JedisConnectionException e) {
+		} catch (Exception e) {
 			errorHandler.error(e.getMessage(), e, ErrorCode.WRITE_FAILURE);
 		}
 	}
 
 	private void push() {
+		LogLog.debug("Sending " + messageIndex + " log messages to Redis");
 		jedis.rpush(SafeEncoder.encode(key),
 			batchSize == messageIndex
 				? batch
