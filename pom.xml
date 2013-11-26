@@ -5,9 +5,11 @@
     <groupId>com.ryantenney.log4j</groupId>
     <artifactId>redis-appender</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <name>redis-appender</name>
+    <name>Log4j Redis Appender</name>
+
+    <inceptionYear>2012</inceptionYear>
     <description>log4j appender for publishing directly to redis</description>
-    <url>http://github.com/ryantenney/redis-appender/</url>
+    <url>http://github.com/ryantenney/log4j-redis-appender/</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -31,6 +33,7 @@
         <license>
             <name>Apache License 2.0</name>
             <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+	    <distribution>repo</distribution>
         </license>
     </licenses>
 
@@ -41,14 +44,14 @@
     </parent>
 
     <scm>
-        <connection>scm:git:git://github.com/ryantenney/redis-appender.git</connection>
-        <developerConnection>scm:git:git@github.com:ryantenney/redis-appender.git</developerConnection>
-        <url>https://github.com/ryantenney/redis-appender/</url>
+        <connection>scm:git:git://github.com/ryantenney/log4j-redis-appender.git</connection>
+        <developerConnection>scm:git:git@github.com:ryantenney/log4j-redis-appender.git</developerConnection>
+        <url>https://github.com/ryantenney/log4j-redis-appender/</url>
     </scm>
 
     <issueManagement>
         <system>github</system>
-        <url>http://github.com/ryantenney/redis-appender/issues</url>
+        <url>http://github.com/ryantenney/log4j-redis-appender/issues</url>
     </issueManagement>
 
     <dependencies>
@@ -183,5 +186,35 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>release-sign-artifacts</id>
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.4</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>
