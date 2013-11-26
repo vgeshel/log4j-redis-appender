@@ -1,5 +1,4 @@
 # log4j-redis-appender [![Build Status](https://travis-ci.org/ryantenney/log4j-redis-appender.png?branch=master)](https://travis-ci.org/ryantenney/log4j-redis-appender)
-===========
 
 Log4j appender for pushing log messages to a Redis list.
 
