@@ -19,6 +19,7 @@ This appender pushes log messages to a Redis list. Here is an example configurat
     log4j.appender.redis.batchSize=100
     log4j.appender.redis.purgeOnFailure=true
     log4j.appender.redis.alwaysBatch=true
+    log4j.appender.redis.daemonThread=true
 
 Where:
 
@@ -30,6 +31,7 @@ Where:
 * **batchSize** (optional, default: 100) the number of log messages to send in a single `RPUSH` command
 * **purgeOnFailure** (optional, default: true) whether to purge the enqueued log messages if an error occurs attempting to connect to redis, thus preventing the memory usage from becoming too high
 * **alwaysBatch** (optional, default: true) whether to wait for a full batch. if true, will only send once there are `batchSize` log messages enqueued
+* **daemonThread** (optional, default: true) whether to launch the appender thread as a daemon thread
 
 ### Maven
 
