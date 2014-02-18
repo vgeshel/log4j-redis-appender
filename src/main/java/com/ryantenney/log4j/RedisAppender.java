@@ -51,6 +51,7 @@ public class RedisAppender extends AppenderSkeleton implements Runnable {
 	private long period = 500;
 	private boolean alwaysBatch = true;
 	private boolean purgeOnFailure = true;
+  private boolean daemonThread = true;
 
 	private int messageIndex = 0;
 	private Queue<LoggingEvent> events;
@@ -68,7 +69,7 @@ public class RedisAppender extends AppenderSkeleton implements Runnable {
 
 			if (key == null) throw new IllegalStateException("Must set 'key'");
 
-			if (executor == null) executor = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("RedisAppender"));
+			if (executor == null) executor = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("RedisAppender", daemonThread));
 
 			if (task != null && !task.isDone()) task.cancel(true);
 			if (jedis != null && jedis.isConnected()) jedis.disconnect();
@@ -209,5 +210,9 @@ public class RedisAppender extends AppenderSkeleton implements Runnable {
 	public boolean requiresLayout() {
 		return true;
 	}
+
+  public void setDaemonThread(boolean daemonThread){
+    this.daemonThread = daemonThread;
+  }
 
 }
