@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <title>Log4j-redis-appender by ryantenney</title>
+  </head>
+
+  <body>
+    <header>
+      <div class="inner">
+        <h1>Log4j-redis-appender</h1>
+        <h2>log4j appender writing straight to Redis</h2>
+        <a href="https://github.com/ryantenney/log4j-redis-appender" class="button"><small>View project on</small>GitHub</a>
+      </div>
+    </header>
+
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <h1>
+<a name="log4j-redis-appender-" class="anchor" href="#log4j-redis-appender-"><span class="octicon octicon-link"></span></a>log4j-redis-appender <a href="https://travis-ci.org/ryantenney/log4j-redis-appender"><img src="https://travis-ci.org/ryantenney/log4j-redis-appender.png?branch=master" alt="Build Status"></a>
+</h1>
+
+<p>Log4j appender for pushing log messages to a Redis list.</p>
+
+<p>Derived from <a href="https://github.com/pavlobaron/log4j2redis">@pavlobaron's log4j2redis</a>, though the two projects share almost no code. That project writes messages to unique keys as opposed to pushing to a list.</p>
+
+<h2>
+<a name="configuration" class="anchor" href="#configuration"><span class="octicon octicon-link"></span></a>Configuration</h2>
+
+<p>This appender pushes log messages to a Redis list. Here is an example configuration:</p>
+
+<pre><code>log4j.rootLogger=DEBUG, redis
+log4j.appender.redis=com.ryantenney.log4j.RedisAppender
+log4j.appender.redis.layout=…
+log4j.appender.redis.host=localhost
+log4j.appender.redis.port=6379
+log4j.appender.redis.password=password
+log4j.appender.redis.key=key
+log4j.appender.redis.period=500
+log4j.appender.redis.batchSize=100
+log4j.appender.redis.purgeOnFailure=true
+log4j.appender.redis.alwaysBatch=true
+log4j.appender.redis.daemonThread=true
+</code></pre>
+
+<p>Where:</p>
+
+<ul>
+<li>
+<strong>key</strong> (<em>required</em>) key of the list to push log messages</li>
+<li>
+<strong>host</strong> (optional, default: localhost)</li>
+<li>
+<strong>port</strong> (optional, default: 6379)</li>
+<li>
+<strong>password</strong> (optional) redis password, if required</li>
+<li>
+<strong>period</strong> (optional, default: 500) the period in milliseconds between </li>
+<li>
+<strong>batchSize</strong> (optional, default: 100) the number of log messages to send in a single <code>RPUSH</code> command</li>
+<li>
+<strong>purgeOnFailure</strong> (optional, default: true) whether to purge the enqueued log messages if an error occurs attempting to connect to redis, thus preventing the memory usage from becoming too high</li>
+<li>
+<strong>alwaysBatch</strong> (optional, default: true) whether to wait for a full batch. if true, will only send once there are <code>batchSize</code> log messages enqueued</li>
+<li>
+<strong>daemonThread</strong> (optional, default: true) whether to launch the appender thread as a daemon thread</li>
+</ul><h3>
+<a name="maven" class="anchor" href="#maven"><span class="octicon octicon-link"></span></a>Maven</h3>
+
+<div class="highlight highlight-xml"><pre><span class="nt">&lt;dependency&gt;</span>
+    <span class="nt">&lt;groupId&gt;</span>com.ryantenney.log4j<span class="nt">&lt;/groupId&gt;</span>
+    <span class="nt">&lt;artifactId&gt;</span>redis-appender<span class="nt">&lt;/artifactId&gt;</span>
+    <span class="nt">&lt;version&gt;</span>1.0.0<span class="nt">&lt;/version&gt;</span>
+<span class="nt">&lt;/dependency&gt;</span>
+</pre></div>
+
+<h3>
+<a name="usage-note" class="anchor" href="#usage-note"><span class="octicon octicon-link"></span></a>Usage Note</h3>
+
+<p>Goes great with <a href="https://github.com/lusis/log4j-jsonevent-layout">@lusis's log4j-jsonevent-layout</a> for pushing log messages straight to a <a href="https://github.com/logstash/logstash">Logstash</a> instance configured to ingest log messages from Redis. If you use Logstash with AMQP, check out <a href="https://github.com/lusis/zmq-appender">@lusis's ZeroMQ Appender</a> or <a href="https://github.com/jbrisbin/vcloud/tree/master/amqp-appender">@jbrisbin's RabbitMQ Appender</a></p>
+
+<h3>
+<a name="license" class="anchor" href="#license"><span class="octicon octicon-link"></span></a>License</h3>
+
+<p>Copyright (c) 2012-2013 Ryan Tenney</p>
+
+<p>Published under Apache Software License 2.0, see LICENSE</p>
+
+<p><a href="http://rochestermade.com"><img src="http://rochestermade.com/media/images/rochester-made-dark-on-light.png" alt="Rochester Made"></a></p>
+        </section>
+
+        <aside id="sidebar">
+          <a href="https://github.com/ryantenney/log4j-redis-appender/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/ryantenney/log4j-redis-appender/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
+
+          <p class="repo-owner"><a href="https://github.com/ryantenney/log4j-redis-appender"></a> is maintained by <a href="https://github.com/ryantenney">ryantenney</a>.</p>
+
+          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
+    </div>
+
+  
+  </body>
+</html>
