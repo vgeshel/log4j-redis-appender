@@ -39,7 +39,7 @@ Where:
 <dependency>
 	<groupId>com.ryantenney.log4j</groupId>
 	<artifactId>redis-appender</artifactId>
-	<version>1.0.0</version>
+	<version>1.0.1</version>
 </dependency>
 ```
 
