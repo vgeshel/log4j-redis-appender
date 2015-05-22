@@ -26,11 +26,7 @@ package com.ryantenney.log4j;
 
 import java.util.Arrays;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.helpers.LogLog;
@@ -52,6 +48,7 @@ public class RedisAppender extends AppenderSkeleton implements Runnable {
 	private boolean alwaysBatch = true;
 	private boolean purgeOnFailure = true;
 	private boolean daemonThread = true;
+	private int queueCapacity = 0;
 
 	private int messageIndex = 0;
 	private Queue<LoggingEvent> events;
@@ -74,7 +71,11 @@ public class RedisAppender extends AppenderSkeleton implements Runnable {
 			if (task != null && !task.isDone()) task.cancel(true);
 			if (jedis != null && jedis.isConnected()) jedis.disconnect();
 
-			events = new ConcurrentLinkedQueue<LoggingEvent>();
+			if (queueCapacity > 0) {
+				events = new ArrayBlockingQueue<LoggingEvent>(queueCapacity);
+			} else {
+				events = new ConcurrentLinkedQueue<LoggingEvent>();
+			}
 			batch = new byte[batchSize][];
 			messageIndex = 0;
 
@@ -89,7 +90,10 @@ public class RedisAppender extends AppenderSkeleton implements Runnable {
 	protected void append(LoggingEvent event) {
 		try {
 			populateEvent(event);
-			events.add(event);
+
+			if (! events.offer(event)) {
+				errorHandler.error("Failed to enqueue an event because the queue is at capacity, the event will be dropped");
+			}
 		} catch (Exception e) {
 			errorHandler.error("Error populating event and adding to queue", e, ErrorCode.GENERIC_FAILURE, event);
 		}
@@ -210,6 +214,8 @@ public class RedisAppender extends AppenderSkeleton implements Runnable {
 	public void setDaemonThread(boolean daemonThread){
 		this.daemonThread = daemonThread;
 	}
+
+	public void setQueueCapacity(int queueCapacity) { this.queueCapacity = queueCapacity; }
 
 	public boolean requiresLayout() {
 		return true;
